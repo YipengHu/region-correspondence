@@ -6,7 +6,7 @@
 import nibabel as nib
 import torch
 
-from region_correspondence import PairedRegions
+from region_correspondence.paired_regions import PairedRegions
 
 
 

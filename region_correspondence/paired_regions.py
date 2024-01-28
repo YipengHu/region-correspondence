@@ -1,7 +1,7 @@
 
 import torch
 
-from register import iterative_ddf
+from region_correspondence.optim import iterative_ddf
 
 
 class PairedRegions():
