@@ -37,5 +37,5 @@ masks_fix = (volume_resize(masks_fix.to(torch.float32), new_size=(58,60,36))).to
 
 # save
 for idx in range(masks_mov.shape[0]):
-    nib.save(nib.Nifti1Image(masks_mov[idx].numpy(),affine=torch.eye(4).numpy()), "./data/test0_mask{}.nii".format(idx))
-    nib.save(nib.Nifti1Image(masks_fix[idx].numpy(),affine=torch.eye(4).numpy()), "./data/test1_mask{}.nii".format(idx))
+    nib.save(nib.Nifti1Image(masks_mov[idx].numpy(),affine=torch.eye(4).numpy()), "./data/test0_mask{}.nii.gz".format(idx))
+    nib.save(nib.Nifti1Image(masks_fix[idx].numpy(),affine=torch.eye(4).numpy()), "./data/test1_mask{}.nii.gz".format(idx))
