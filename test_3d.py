@@ -1,3 +1,4 @@
+# Test data are from https://zenodo.org/records/7013610, see make_test_data.py for details.
 
 # import os
 # import time
@@ -9,17 +10,15 @@ import torch
 from region_correspondence.paired_regions import PairedRegions
 
 
-
-FILENAME_MOV = "./data/7013610-masks/002007_mask.nii"
-FILENAME_FIX = "./data/7013610-masks/001001_mask.nii"
-# FILENAME_FIX = "./data/7013610-masks/002008_mask.nii" (for the same sized masks)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-one_hot = lambda m : torch.stack([torch.tensor(m==i) for i in range(1,int(m.max()+1))], dim=0)
-# one_hot = lambda m : torch.nn.functional.one_hot(torch.tensor(m,dtype=torch.int64), num_classes=int(m.max()+1))[...,1:]  # remove the background
-masks_mov = one_hot(nib.load(FILENAME_MOV).get_fdata())
-masks_fix = one_hot(nib.load(FILENAME_FIX).get_fdata())
+# read test masks
+masks_mov = torch.stack([torch.tensor(nib.load("./data/test0_mask{}.nii".format(idx)).get_fdata()) for idx in range(8)], dim=0).to(torch.bool)
+masks_fix = torch.stack([torch.tensor(nib.load("./data/test1_mask{}.nii".format(idx)).get_fdata()) for idx in range(8)], dim=0).to(torch.bool)
+
+paired_rois = PairedRegions(masks_mov=masks_mov, masks_fix=masks_fix, device=device)
+ddf = paired_rois.get_dense_correspondence(verbose=True)
 
 
-paired_rois = PairedRegions(masks_mov=masks_mov, masks_fix=masks_fix)
-ddf = paired_rois.get_dense_correspondence()
+## save warped images for visulisation
