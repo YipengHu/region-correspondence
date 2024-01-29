@@ -40,3 +40,14 @@ def warp_by_ddf(vol, ddf, ref_grid=None):
     warped_grid = ref_grid + ddf
     warped = sampler(vol, warped_grid)
     return warped
+
+
+def upsample_control_grid(control_grid, ref_grid):
+    '''
+    implements the up-sampling of the control grid to the sampling grid with linear interpolation
+    control_grid: torch.tensor of shape (D,H,W,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
+    ref_grid: torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
+    Returns a sample_grid of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
+    '''
+    sample_grid = sampler(control_grid.permute(3,0,1,2),ref_grid).permute(1,2,3,0)
+    return sample_grid

@@ -19,18 +19,18 @@ class PairedRegions():
             self.masks_fix = self.masks_fix.to(device)
         self.method = "iterative_ddf"
 
-    def get_dense_correspondence(self, transform_type='ddf', **kwargs):
+    def get_dense_correspondence(self, transform_type='ffd', **kwargs):
         '''
         transform_type: str, one of ['ddf', 'ffd', 'affine', 'spline']
             ddf implements the direct dense displacement field. 
-            ffd implements the free-form deformation based on control points.
+            ffd implements the free-form deformation based on a control point grid.
         Returns a dense displacement field (DDF) of shape (H1,W1,D1,3) where the 0th-dim is the displacement vector
         '''
         match transform_type.lower():
-            case 'ddf': # direct dense displacement field
+            case 'ddf':
                 self.ddf = ddf_iterative(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), device=self.device, **kwargs)  # grid_sample requires float32
-            case 'ffd': # control point based free-form deformation
-                self.control_points, self.ddf = ddf_iterative(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), device=self.device, **kwargs)  # grid_sample requires float32
+            case 'ffd':
+                self.control_grid, self.ddf = ffd_iterative(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), device=self.device, **kwargs) 
             case 'affine':
                 raise NotImplementedError("TPS transform is not implemented yet.")
             case 'spline':
