@@ -60,7 +60,6 @@ class ROILoss():
             loss += self.w_class * self.class_loss(roi0, roi1)
         return loss
     
-    
     def overlap_loss_cross(self, roi0, roi1, eps=1e-8):
         intersection = (roi0 * roi1).sum()
         union = roi0.sum() + roi1.sum()
@@ -104,9 +103,7 @@ class DDFLoss():
         '''
         implements L2-norm over the ddf gradients
         '''
-        dFdx = torch.stack(torch.gradient(ddf[...,0]), dim=3)
-        dFdy = torch.stack(torch.gradient(ddf[...,1]), dim=3)
-        dFdz = torch.stack(torch.gradient(ddf[...,2]), dim=3)
+        dFdx, dFdy, dFdz = self.ddf_gradients(ddf)
         grad_norms = dFdx**2 + dFdy**2 + dFdz**2
         return grad_norms.mean()
     
@@ -114,6 +111,23 @@ class DDFLoss():
         '''
         implements bending energy estimated over the ddf
         '''
-        raise NotImplementedError("bending_energy is not implemented yet")
+        dFdx, dFdy, dFdz = self.ddf_gradients(ddf)
 
+        dFdx2 = torch.stack(torch.gradient(dFdx[...,0]), dim=3)
+        dFdy2 = torch.stack(torch.gradient(dFdy[...,1]), dim=3)
+        dFdz2 = torch.stack(torch.gradient(dFdz[...,2]), dim=3)
+        #TODO: a bit waste computing the same partial derivatives, but using torch.gradient() may be faster
 
+        bending_energy = dFdx2[...,0]**2 + dFdy2[...,1]**2 + dFdz2[...,2]**2 + \
+            2*dFdx2[...,1]*dFdy2[...,0] + 2*dFdx2[...,2]*dFdz2[...,0] + 2*dFdy2[...,2]*dFdz2[...,1]
+        
+        raise bending_energy.mean()
+    
+    def ddf_gradients(ddf):
+        '''
+        computes ddf gradients
+        '''
+        dFdx = torch.stack(torch.gradient(ddf[...,0]), dim=3)
+        dFdy = torch.stack(torch.gradient(ddf[...,1]), dim=3)
+        dFdz = torch.stack(torch.gradient(ddf[...,2]), dim=3)
+        return dFdx, dFdy, dFdz

@@ -25,3 +25,4 @@ class PairedRegions():
         '''
         self.ddf = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), device=self.device, **kwargs)  # grid_sample requires float32
         return self.ddf
+    
