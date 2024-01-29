@@ -123,6 +123,7 @@ class DDFLoss():
         
         raise bending_energy.mean()
     
+    @staticmethod
     def ddf_gradients(ddf):
         '''
         computes ddf gradients
