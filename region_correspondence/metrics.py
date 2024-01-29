@@ -73,15 +73,15 @@ class DDFLoss():
         '''
         dFdx, dFdy, dFdz = self.ddf_gradients(ddf)
 
-        dFdx2 = torch.stack(torch.gradient(dFdx[...,0]), dim=3)
-        dFdy2 = torch.stack(torch.gradient(dFdy[...,1]), dim=3)
-        dFdz2 = torch.stack(torch.gradient(dFdz[...,2]), dim=3)
-        #TODO: a bit waste computing the same partial derivatives, but using torch.gradient() may be faster
+        d2Fdx = torch.stack(torch.gradient(dFdx[...,0]), dim=3)
+        d2Fdy = torch.stack(torch.gradient(dFdy[...,1]), dim=3)
+        d2Fdz = torch.stack(torch.gradient(dFdz[...,2]), dim=3)
 
-        bending_energy = dFdx2[...,0]**2 + dFdy2[...,1]**2 + dFdz2[...,2]**2 + \
-            2*dFdx2[...,1]*dFdy2[...,0] + 2*dFdx2[...,2]*dFdz2[...,0] + 2*dFdy2[...,2]*dFdz2[...,1]
+        bending_energy = d2Fdx[...,0]**2 + d2Fdy[...,1]**2 + d2Fdz[...,2]**2 + \
+            2*d2Fdx[...,1]**2 + 2*d2Fdx[...,2]**2 + 2*d2Fdy[...,2]**2
+            #Unstable: 2*d2Fdx[...,1]*d2Fdy[...,0] + 2*d2Fdx[...,2]*d2Fdz[...,0] + 2*d2Fdy[...,2]*d2Fdz[...,1]
         
-        raise bending_energy.mean()
+        return bending_energy.mean()
     
     @staticmethod
     def ddf_gradients(ddf):
