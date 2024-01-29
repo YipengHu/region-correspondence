@@ -19,11 +19,9 @@ class PairedRegions():
             self.masks_fix = self.masks_fix.to(device)
         self.method = "iterative_ddf"
 
-    def get_dense_correspondence(self, verbose=False):
+    def get_dense_correspondence(self, **kwargs):
         '''
         Returns a dense displacement field (DDF) of shape (H1,W1,D1,3) where the 0th-dim is the displacement vector
         '''
-        ddf = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), device=self.device, verbose=verbose)  # grid_sample requires float32
-    
-        return ddf
-    
+        self.ddf = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), device=self.device, **kwargs)  # grid_sample requires float32
+        return self.ddf
