@@ -20,7 +20,7 @@ def ddf_iterative(mov, fix, device=None, max_iter=int(1e7), lr=1e-4, w_ddf=0.1, 
     ref_grid = get_reference_grid(ddf.shape[:-1], device=device)    
     optimizer = torch.optim.Adam(params=[ddf], lr=lr)
     loss_roi = ROILoss(w_overlap=1.0, w_class=0.0) 
-    loss_ddf = DDFLoss(type='l2norm')
+    loss_ddf = DDFLoss(type='l2grad')
 
     for iter in range(max_iter):
         

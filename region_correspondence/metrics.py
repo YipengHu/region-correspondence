@@ -44,27 +44,33 @@ class ROILoss():
 
 
 class DDFLoss():
-    def __init__(self, type='l2norm') -> None:
+    def __init__(self, type='l2grad') -> None:
         self.type = type
 
     def __call__(self, ddf):
         '''
         ddf: torch.tensor of shape (H1,W1,D1,3)
         '''
-        if self.type == "l2norm":
-            loss = self.l2_gradient(ddf)
-        elif self.type == "bending":
-            loss = self.bending_energy(ddf)
-        else:
-            raise ValueError(f"Unknown DDFLoss type: {self.type}")
+        match self.type.lower():
+            case "l2grad":
+                loss = self.gradient_norm(ddf, l1_flag=True)
+            case "l1grad":
+                loss = self.gradient_norm(ddf, l1_flag=True)
+            case "bending":
+                loss = self.bending_energy(ddf)
+            case _:
+                raise ValueError(f"Unknown DDFLoss type: {self.type}")
         return loss
     
-    def l2_gradient(self, ddf):
+    def gradient_norm(self, ddf, l1_flag=False):
         '''
         implements L2-norm over the ddf gradients
         '''
         dFdx, dFdy, dFdz = self.ddf_gradients(ddf)
-        grad_norms = dFdx**2 + dFdy**2 + dFdz**2
+        if l1_flag:
+            grad_norms = torch.abs(dFdx) + torch.abs(dFdy) + torch.abs(dFdz)
+        else:
+            grad_norms = dFdx**2 + dFdy**2 + dFdz**2
         
         return grad_norms.mean()
     
@@ -93,5 +99,5 @@ class DDFLoss():
         dFdx = torch.stack([dXdx, dYdx, dZdx], dim=3)
         dFdy = torch.stack([dXdy, dYdy, dZdy], dim=3)
         dFdz = torch.stack([dXdz, dYdz, dZdz], dim=3)
-        
+
         return dFdx, dFdy, dFdz
