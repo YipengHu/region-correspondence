@@ -65,6 +65,7 @@ class DDFLoss():
         '''
         dFdx, dFdy, dFdz = self.ddf_gradients(ddf)
         grad_norms = dFdx**2 + dFdy**2 + dFdz**2
+        
         return grad_norms.mean()
     
     def bending_energy(self, ddf):
@@ -72,7 +73,6 @@ class DDFLoss():
         implements bending energy estimated over the ddf
         '''
         dFdx, dFdy, dFdz = self.ddf_gradients(ddf)
-
         d2Fdxx, d2Fdxy, d2Fdxz = self.ddf_gradients(dFdx)
         d2Fdyx, d2Fdyy, d2Fdyz = self.ddf_gradients(dFdy)
         d2Fdzx, d2Fdzy, d2Fdzz = self.ddf_gradients(dFdz)
@@ -89,8 +89,9 @@ class DDFLoss():
         '''
         dXdx, dXdy, dXdz = torch.gradient(ddf[...,0])
         dYdx, dYdy, dYdz = torch.gradient(ddf[...,1])
-        dZdx, dZdy, dZdz = torch.gradient(ddf[...,1])
+        dZdx, dZdy, dZdz = torch.gradient(ddf[...,2])
         dFdx = torch.stack([dXdx, dYdx, dZdx], dim=3)
         dFdy = torch.stack([dXdy, dYdy, dZdy], dim=3)
         dFdz = torch.stack([dXdz, dYdz, dZdz], dim=3)
+        
         return dFdx, dFdy, dFdz
