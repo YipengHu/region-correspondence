@@ -59,7 +59,7 @@ def ffd_iterative(mov, fix, control_grid_size=(5,5,5), device=None, max_iter=int
     
     optimizer = torch.optim.Adam(params=[control_grid], lr=lr)
     loss_roi = ROILoss(w_overlap=1.0, w_class=0.0) 
-    loss_ddf = DDFLoss(type='l2norm')
+    loss_ddf = DDFLoss(type='bending')
 
     for iter in range(max_iter):
         
