@@ -19,11 +19,11 @@ masks_mov = torch.stack([torch.tensor(nib.load("./data/test0_mask{}.nii.gz".form
 masks_fix = torch.stack([torch.tensor(nib.load("./data/test1_mask{}.nii.gz".format(idx)).get_fdata()) for idx in range(8)], dim=0).to(torch.bool)
 
 paired_rois = PairedRegions(masks_mov=masks_mov, masks_fix=masks_fix, device=device)
-ddf = paired_rois.get_dense_correspondence(transform_type='ffd', max_iter=int(2e4), lr=1e-3, w_ddf=10.0, verbose=True)
+ddf = paired_rois.get_dense_correspondence(transform_type='ddf', max_iter=int(1e4), lr=1e-3, w_ddf=1.0, verbose=True)
 # TODO: adjust w_ddf for desired smoothness of the dense correspondence  
 
 ## save warped ROIs for visulisation
-masks_warped = warp_by_ddf(masks_mov.to(dtype=torch.float32, device=device), ddf).to(torch.uint8)
+masks_warped = (warp_by_ddf(masks_mov.to(dtype=torch.float32, device=device), ddf)*255).to(torch.uint8)
 for idx in range(masks_warped.shape[0]):
     nib.save(nib.Nifti1Image(masks_warped[idx].cpu().numpy(),affine=torch.eye(4).numpy()), "./data/warped_mask{}.nii.gz".format(idx))
 print("Saved ./data/warped_mask*.nii.gz")
