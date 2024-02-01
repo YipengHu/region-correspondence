@@ -15,7 +15,7 @@ def get_reference_grid(grid_size, device=None):
 def sampler(vol, sample_grid):
     '''
     vol: torch.tensor of shape (C,D0,H0,W0) where C is the number of masks
-    sample_grid: torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
+    sample_grid: torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the coordinate vector xyz (<- ijk)
     Returns a warped image of shape (C,D1,H1,W1)
     '''
     warped = torch.nn.functional.grid_sample(
@@ -32,7 +32,7 @@ def warp_by_ddf(vol, ddf, ref_grid=None):
     '''
     vol: torch.tensor of shape (C,D0,H0,W0) where C is the number of masks
     ddf: torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
-    ref_grid: optional - torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
+    ref_grid: optional - torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the coordinate vector xyz (<- ijk)
     Returns a warped image of shape (C,D1,H1,W1)
     '''
     if ref_grid is None:
@@ -45,9 +45,9 @@ def warp_by_ddf(vol, ddf, ref_grid=None):
 def upsample_control_grid(control_grid, ref_grid):
     '''
     implements the up-sampling of the control grid to the sampling grid with linear interpolation
-    control_grid: torch.tensor of shape (D,H,W,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
-    ref_grid: torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
-    Returns a sample_grid of shape (D1,H1,W1,3) where the 3rd-dim is the displacement vector xyz (<- ijk)
+    control_grid: torch.tensor of shape (D,H,W,3) where the 3rd-dim is the coordinate vector xyz (<- ijk)
+    ref_grid: torch.tensor of shape (D1,H1,W1,3) where the 3rd-dim is the coordinate vector xyz (<- ijk)
+    Returns a sample_grid of shape (D1,H1,W1,3) where the 3rd-dim is the coordinate vector xyz (<- ijk)
     '''
     sample_grid = sampler(control_grid.permute(3,0,1,2),ref_grid).permute(1,2,3,0)
     return sample_grid

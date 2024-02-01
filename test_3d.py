@@ -1,9 +1,5 @@
 # Test data are from https://zenodo.org/records/7013610, see make_test_data.py for details.
 
-# import os
-# import time
-
-# import numpy as np
 import nibabel as nib
 import torch
 
