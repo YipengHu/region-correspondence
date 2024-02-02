@@ -1,6 +1,8 @@
 # Description: This script is used to generate test data, data source: https://zenodo.org/records/7013610
 
 
+
+## for 3d
 import nibabel as nib
 import torch
 
@@ -37,5 +39,21 @@ masks_fix = (volume_resize(masks_fix.to(torch.float32), new_size=(58,60,36))).to
 
 # save
 for idx in range(masks_mov.shape[0]):
-    nib.save(nib.Nifti1Image(masks_mov[idx].numpy(),affine=torch.eye(4).numpy()), "./data/test0_mask{}.nii.gz".format(idx))
-    nib.save(nib.Nifti1Image(masks_fix[idx].numpy(),affine=torch.eye(4).numpy()), "./data/test1_mask{}.nii.gz".format(idx))
+    nib.save(nib.Nifti1Image(masks_mov[idx].numpy(),affine=torch.eye(4).numpy()), "./data/3d/test0_mask{}.nii.gz".format(idx))
+    nib.save(nib.Nifti1Image(masks_fix[idx].numpy(),affine=torch.eye(4).numpy()), "./data/3d/test1_mask{}.nii.gz".format(idx))
+
+
+## for 2d
+from PIL import Image
+import torch
+import numpy as np
+
+
+FOLDERNAME = "./data/Prostate/sample1"
+for idx in range(8):
+    img_mov = Image.open("{}/mask_1_{:d}.png".format(FOLDERNAME, idx+1))
+    img_fix = Image.open("{}/mask_2_{:d}.png".format(FOLDERNAME, idx+1))
+    img_mov = np.array(img_mov.getdata(),dtype=np.uint8).reshape(img_mov.size)
+    img_fix = np.array(img_fix.getdata(),dtype=np.uint8).reshape(img_fix.size)
+    Image.fromarray(img_mov*255).save("./data/2d/test0_mask{}.png".format(idx))
+    Image.fromarray(img_fix*255).save("./data/2d/test1_mask{}.png".format(idx))
