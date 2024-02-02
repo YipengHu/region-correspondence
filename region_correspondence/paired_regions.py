@@ -31,7 +31,7 @@ class PairedRegions():
             case 'ddf':
                 self.ddf, _ = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=None, device=self.device, **kwargs)  # grid_sample requires float32
             case 'ffd':
-                self.ddf, self.control_grid = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=(5,5,5), device=self.device, **kwargs) 
+                self.ddf, self.control_grid = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
             case 'affine':
                 raise NotImplementedError("TPS transform is not implemented yet.")
             case 'spline':

@@ -11,18 +11,29 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
         when control_grid_size = None, the dense displacement field (DDF) estimation is estimated using the iterative optimisation
     mov: torch.tensor of shape (C,D0,H0,W0) where C is the number of masks
     fix: torch.tensor of shape (C,D1,H1,W1) where C is the number of masks
-    control_grid_size: tuple of 3 ints
+    control_grid_size: 
+        None for DDF estimation
+        when specified, tuple of 3 ints for 3d, tuple of 2 ints for 2d, or tuple of 1 int for the same size in all dimensions
     Returns a dense displacement field (DDF) of shape (D1,H1,W1,3) where the 3rd-dim contains the displacement vectors
     '''
     num_masks = mov.shape[0]
     if num_masks != fix.shape[0]:
-        raise ValueError("mov and fix must have the same number of masks")
-    
+        raise ValueError("mov and fix must have the same number of masks.")
+    if mov.dim() != fix.dim():
+        raise ValueError("mov and fix must have the same dimensionality.")
+    if isinstance(control_grid_size,int):
+        if mov.dim() == 4:
+            control_grid_size = (control_grid_size,control_grid_size,control_grid_size)
+        elif mov.dim() == 3:
+            control_grid_size = (control_grid_size,control_grid_size)
+
     if verbose:
-        if control_grid_size is None:
-            print("Optimising DDF (dense displacement field):")
-        else:
-            print("Optimising FFD (free-form deformation):")
+            if control_grid_size is None:
+                print("Optimising DDF (dense displacement field):")
+            elif len(control_grid_size) == 3:
+                print("Optimising FFD (free-form deformation) with control grid size ({},{},{}):".format(*control_grid_size))
+            elif len(control_grid_size) == 2:
+                print("Optimising FFD (free-form deformation) with control grid size ({},{}):".format(*control_grid_size))
     
     ref_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
     if control_grid_size is not None:
