@@ -39,11 +39,21 @@ class ROILoss():
         overlap = 2*intersection / (union+eps)
         return 1 - overlap.mean()
     
-    def class_loss(self, roi0, roi1):
+    def class_loss(self, roi0, roi1, label_smooth=0.1, eps=1e-5):
         '''
-        Implements mean-square-error as the classification loss
+        Implements cross-entropy as the classification loss, assumes roi1 is the ground truth
         '''
-        mse = ((roi0 - roi1)**2).mean(dim=-1)
+        pred = torch.clamp(roi0,min=eps,max=1-eps)
+        label = torch.clamp(roi1,min=label_smooth,max=1-label_smooth)
+        log_pr = torch.log(pred)*label + torch.log(1-pred)*(1-label)
+        ce = -log_pr.mean(dim=-1) 
+        return ce.mean()
+    
+    def image_loss(self, img0, img1):
+        '''
+        Implements mean-square-error as the image loss
+        '''
+        mse = ((img0 - img1)**2).mean(dim=-1)
         return mse.mean()
 
 

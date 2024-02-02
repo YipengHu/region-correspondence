@@ -12,7 +12,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 # read test masks
-masks_mov, masks_fix = load_test_data('2d')
+masks_mov, masks_fix = load_test_data('3d')
 
 # estimate dense correspondence
 paired_rois = PairedRegions(masks_mov=masks_mov, masks_fix=masks_fix, device=device)

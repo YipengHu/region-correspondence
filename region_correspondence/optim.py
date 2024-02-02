@@ -44,8 +44,9 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
     control_grid.requires_grad = True
 
     optimizer = torch.optim.Adam(params=[control_grid], lr=lr)
-    loss_roi = ROILoss(w_overlap=1.0, w_class=0.0) 
+    loss_roi = ROILoss(w_overlap=1.0, w_class=0.1) 
     loss_ddf = DDFLoss(type='bending')
+    metric_overlap = ROILoss(w_overlap=1.0, w_class=0.0)
 
     for iter in range(max_iter):
         
@@ -64,7 +65,7 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
         
         if verbose:
             if iter % 100 == 0:
-                print("iter={}: loss={:0.5f} (roi={:0.5f}, ddf={:0.5f})".format(iter, loss, loss_value_roi, loss_value_ddf))
+                print("iter={}: loss={:0.5f} (deform={:0.5f}, overlap={:0.5f})".format(iter, loss, loss_value_ddf, 1-metric_overlap(warped,fix)))
         
         loss.backward()
         optimizer.step()
