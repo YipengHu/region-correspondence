@@ -58,7 +58,7 @@ class DDFLoss():
         if len(ddf.shape) == 4:
             match self.type.lower():
                 case "l2grad":
-                    loss = self.gradient_norm(ddf, l1_flag=True)
+                    loss = self.gradient_norm(ddf, l1_flag=False)
                 case "l1grad":
                     loss = self.gradient_norm(ddf, l1_flag=True)
                 case "bending":
@@ -68,7 +68,7 @@ class DDFLoss():
         elif len(ddf.shape) == 3:
             match self.type.lower():
                 case "l2grad":
-                    loss = self.gradient_norm_2d(ddf, l1_flag=True)
+                    loss = self.gradient_norm_2d(ddf, l1_flag=False)
                 case "l1grad":
                     loss = self.gradient_norm_2d(ddf, l1_flag=True)
                 case "bending":
