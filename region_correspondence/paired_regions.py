@@ -8,8 +8,10 @@ class PairedRegions():
 
     def __init__(self, masks_mov, masks_fix, device=None):
         '''
-        masks_mov: torch.tensor of shape (C,D0,H0,W0) for 3d data, or (C,H0,W0) for 2d data, where C is the number of masks
-        masks_fix: torch.tensor of shape (C,D1,H1,W1) for 3d data, or (C,H1,W1) for 2d data, where C is the number of masks
+        masks_mov: torch.tensor of shape (C,D0,H0,W0) for 3d data, 
+                            (C,H0,W0) for 2d data, where C is the number of masks
+        masks_fix: torch.tensor of shape (C,D1,H1,W1) for 3d data, 
+                            (C,H1,W1) for 2d data, where C is the number of masks
         '''
         self.masks_mov = masks_mov
         self.masks_fix = masks_fix

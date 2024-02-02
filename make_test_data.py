@@ -93,3 +93,8 @@ def save_test_data(masks_warped):
         for idx in range(masks_warped.shape[0]):
             nib.save(nib.Nifti1Image(masks_warped[idx].cpu().numpy(),affine=torch.eye(4).numpy()), "{}/warped_mask{}.nii.gz".format(FOLDERNAME,idx))
         print("Saved {}/warped_mask*.nii.gz".format(FOLDERNAME))
+    elif masks_warped.ndim == 3:  # 2d
+        FOLDERNAME = './data/2d'
+        for idx in range(masks_warped.shape[0]):
+            Image.fromarray(masks_warped[idx].cpu().numpy()).save("{}/warped_mask{}.png".format(FOLDERNAME,idx))
+        print("Saved {}/warped_mask*.png".format(FOLDERNAME))

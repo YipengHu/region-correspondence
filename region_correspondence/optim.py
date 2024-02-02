@@ -1,7 +1,7 @@
 
 import torch
 
-from region_correspondence.utils import get_reference_grid, warp_by_ddf, upsample_control_grid, sampler
+from region_correspondence.utils import get_reference_grid, upsample_control_grid, sampler
 from region_correspondence.metrics import DDFLoss, ROILoss
 
 
@@ -28,7 +28,7 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
     if control_grid_size is not None:
         control_grid = get_reference_grid(grid_size=control_grid_size, device=device)
     else:  #ddf
-        control_grid = get_reference_grid(grid_size=ref_grid.shape, device=device)
+        control_grid = get_reference_grid(grid_size=ref_grid.shape[:-1], device=device)
     control_grid += torch.normal(mean=0, std=1e-5, size=control_grid.shape, dtype=torch.float32, device=device)  # initialise to break symmetry
     control_grid.requires_grad = True
 
