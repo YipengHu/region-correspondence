@@ -57,3 +57,34 @@ for idx in range(8):
     img_fix = np.array(img_fix.getdata(),dtype=np.uint8).reshape(img_fix.size)
     Image.fromarray(img_mov*255).save("./data/2d/test0_mask{}.png".format(idx))
     Image.fromarray(img_fix*255).save("./data/2d/test1_mask{}.png".format(idx))
+
+
+## utility functions
+def load_test_data(type='3d'):
+
+    match type.lower():
+        case '2d':
+            FOLDERNAME = './data/2d'
+            MASK_SIZE = (100,110)
+            NUM_MASKS = 6
+            masks_mov = [torch.tensor(Image.open("{}/test0_mask{}.png".format(FOLDERNAME, idx)).resize(MASK_SIZE).getdata(),dtype=torch.bool).reshape(MASK_SIZE) for idx in range(NUM_MASKS)]
+            masks_fix = [torch.tensor(Image.open("{}/test1_mask{}.png".format(FOLDERNAME, idx)).resize(MASK_SIZE).getdata(),dtype=torch.bool).reshape(MASK_SIZE) for idx in range(NUM_MASKS)]
+            masks_mov = torch.stack(masks_mov,dim=0)
+            masks_fix = torch.stack(masks_fix,dim=0)
+        case '3d':
+            FOLDERNAME = './data/3d'
+            NUM_MASKS = 8
+            masks_mov = torch.stack([torch.tensor(nib.load("{}/test0_mask{}.nii.gz".format(FOLDERNAME,idx)).get_fdata()) for idx in range(NUM_MASKS)], dim=0).to(torch.bool)
+            masks_fix = torch.stack([torch.tensor(nib.load("{}/test1_mask{}.nii.gz".format(FOLDERNAME,idx)).get_fdata()) for idx in range(NUM_MASKS)], dim=0).to(torch.bool)
+        case _:
+            raise ValueError("Unknown type: {}".format(type))
+    
+    return masks_mov, masks_fix
+
+
+def save_test_data(masks_warped):    
+    if masks_warped.ndim == 4:  # 3d        
+        FOLDERNAME = './data/3d'
+        for idx in range(masks_warped.shape[0]):
+            nib.save(nib.Nifti1Image(masks_warped[idx].cpu().numpy(),affine=torch.eye(4).numpy()), "{}/warped_mask{}.nii.gz".format(FOLDERNAME,idx))
+        print("Saved {}/warped_mask*.nii.gz".format(FOLDERNAME))
