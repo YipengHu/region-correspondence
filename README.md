@@ -1,6 +1,8 @@
 # region-correspondence
 
-This repository implements methods to obtain dense correspondence from region correspondence, a higher-level correspondence represented by multiple, paired (corresponding) region of interest (ROI) masks.  
+This repository implements methods to obtain dense correspondence from region correspondence. 
+Region correspondence is a higher-level correspondence represented by multiple, paired (corresponding) region of interest (ROI) masks.
+3D and 2D ROIs are supported.  
 
 
 ```python

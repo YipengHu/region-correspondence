@@ -14,7 +14,7 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
     control_grid_size: 
         None for DDF estimation
         when specified, tuple of 3 ints for 3d, tuple of 2 ints for 2d, or tuple of 1 int for the same size in all dimensions
-    Returns a dense displacement field (DDF) of shape (D1,H1,W1,3) where the 3rd-dim contains the displacement vectors
+    Returns a dense displacement field (DDF) of shape (D1,H1,W1,3) where the dim=3 contains the displacement vectors
     '''
     num_masks = mov.shape[0]
     if num_masks != fix.shape[0]:
