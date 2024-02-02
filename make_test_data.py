@@ -70,10 +70,10 @@ def load_test_data(type='3d'):
     match type.lower():
         case '2d':
             FOLDERNAME = './data/2d'
-            MASK_SIZE = (100,110)
+            MASK_SIZE = (100,110)  # (h,w)
             NUM_MASKS = 6
-            masks_mov = [torch.tensor(Image.open("{}/test0_mask{}.png".format(FOLDERNAME, idx)).resize(MASK_SIZE).getdata(),dtype=torch.bool).reshape(MASK_SIZE) for idx in range(NUM_MASKS)]
-            masks_fix = [torch.tensor(Image.open("{}/test1_mask{}.png".format(FOLDERNAME, idx)).resize(MASK_SIZE).getdata(),dtype=torch.bool).reshape(MASK_SIZE) for idx in range(NUM_MASKS)]
+            masks_mov = [torch.tensor(Image.open("{}/test0_mask{}.png".format(FOLDERNAME, idx)).resize(MASK_SIZE[::-1]).getdata(),dtype=torch.bool).reshape(MASK_SIZE) for idx in range(NUM_MASKS)]
+            masks_fix = [torch.tensor(Image.open("{}/test1_mask{}.png".format(FOLDERNAME, idx)).resize(MASK_SIZE[::-1]).getdata(),dtype=torch.bool).reshape(MASK_SIZE) for idx in range(NUM_MASKS)]
             masks_mov = torch.stack(masks_mov,dim=0)
             masks_fix = torch.stack(masks_fix,dim=0)
         case '3d':
