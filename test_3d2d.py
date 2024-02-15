@@ -1,6 +1,5 @@
 # Test data are from https://zenodo.org/records/7013610, see make_test_data.py for details.
 
-from PIL import Image
 import torch
 
 from make_test_data import load_test_data, save_test_data
