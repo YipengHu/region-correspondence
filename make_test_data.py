@@ -87,12 +87,14 @@ def load_test_data(type='3d'):
     return masks_mov, masks_fix
 
 
-def save_test_data(masks_warped):    
+def save_test_data(masks_warped, ddf=None):    
     if masks_warped.ndim == 4:  # 3d        
         FOLDERNAME = './data/3d'
         for idx in range(masks_warped.shape[0]):
             nib.save(nib.Nifti1Image(masks_warped[idx].cpu().numpy(),affine=torch.eye(4).numpy()), "{}/warped_mask{}.nii.gz".format(FOLDERNAME,idx))
         print("Saved {}/warped_mask*.nii.gz".format(FOLDERNAME))
+        if ddf is not None:
+            nib.save(nib.Nifti1Image(ddf.cpu().detach().numpy(),affine=torch.eye(4).numpy()), "{}/ddf.nii.gz".format(FOLDERNAME))
     elif masks_warped.ndim == 3:  # 2d
         FOLDERNAME = './data/2d'
         for idx in range(masks_warped.shape[0]):
