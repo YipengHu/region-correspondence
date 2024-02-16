@@ -1,7 +1,7 @@
 
 import torch
 
-from region_correspondence.optim import iterative_ddf, ls_transform
+from region_correspondence.optim import ffd_transform, feature_transform
 
 
 class PairedRegions():
@@ -37,13 +37,13 @@ class PairedRegions():
         '''
         match transform_type.lower():
             case 'ddf':
-                self.ddf, _ = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=None, device=self.device, **kwargs)  # grid_sample requires float32
+                self.ddf, _ = ffd_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=None, device=self.device, **kwargs)  # grid_sample requires float32
             case 'ffd':
-                self.ddf, self.control_grid = iterative_ddf(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
+                self.ddf, self.control_grid = ffd_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
             case 'affine':
-                self.ddf, self.affine_matrix = ls_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type='affine', device=self.device, **kwargs)
+                self.ddf, self.affine_matrix = feature_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type='affine', feature_type='centroid', device=self.device, **kwargs)
             case 'rigid':
-                self.ddf, self.affine_matrix = ls_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type='rigid', device=self.device, **kwargs)
+                self.ddf, self.affine_matrix = feature_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type='rigid', feature_type='surface', device=self.device, **kwargs)
             case 'spline':
                 raise NotImplementedError("TPS transform is not implemented yet.")
             case _:

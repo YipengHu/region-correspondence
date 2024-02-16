@@ -1,13 +1,15 @@
+# implements the optimisation methods for region correspondence estimation
 
 import torch
 
-from region_correspondence.utils import get_reference_grid, upsample_control_grid, sampler
+from region_correspondence.control import get_reference_grid, upsample_control_grid, sampler
 from region_correspondence.metrics import DDFLoss, ROILoss
+from region_correspondence.feature import get_foreground_centroids
 
 
-def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
+def ffd_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
     '''
-    Implements the free-form deformation (FFD) estimation based on control point grid (control_grid), using iterative optimisation
+    Implements the control-point-based free-form deformation (FFD) estimation based on control point grid (control_grid), using iterative optimisation
         when control_grid_size = None, the dense displacement field (DDF) estimation is estimated using the iterative optimisation
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
     fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
@@ -68,24 +70,30 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
     return ddf, control_grid 
 
 
-def ls_transform(mov, fix, transform_type='affine', device=None):
+def feature_transform(mov, fix, transform_type='affine', feature_type='centroid', device=None):
     '''
-    Implements the least-squares (LS) estimation of parametric transformation 
+    Implements estimation of parametric transformation using extracted features 
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
     fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
     transform_type: str, one of ["affine", "rigid", "rigid7"]
 
     '''
-    ## extract voxel/pixel coordinates
-    fix_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
-    mov_grid = get_reference_grid(grid_size=mov.shape[1:], device=device)
+    if transform_type not in ["affine", "rigid", "rigid7"]:
+        raise ValueError("Unknown transform type: {}".format(transform_type))
+    if feature_type not in ["centroid", "surface"]:
+        raise ValueError("Unknown feature type: {}".format(feature_type))
     
-    mask_indexing = lambda grid, masks: [torch.stack([grid[...,d][masks[n,...]] for d in range(grid.shape[-1])],dim=-1) for n in range(masks.shape[0])]
-    fix_coords = mask_indexing(fix_grid, fix)
-    mov_coords = mask_indexing(mov_grid, mov)
+    if feature_type == "centroid":
+        mov_centroids = get_foreground_centroids(mov, device=device)
+        fix_centroids = get_foreground_centroids(fix, device=device)
 
-    affine_matrix = gaussian_alignment(mov_coords, fix_coords, transform_type)
-
+        if transform_type == "affine":
+            affine_matrix = torch.linalg.lstsq(mov_centroids, fix_centroids).solution
+        elif transform_type == "rigid" or transform_type == "rigid7":
+            raise NotImplementedError("Rigid transform for feature type {} is not implemented yet.".format(feature_type))
+    
+    # compute the displacement field
+    fix_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
     ddf = fix_grid @ affine_matrix  - fix_grid
 
     ddf=None
