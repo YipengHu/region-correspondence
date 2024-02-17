@@ -88,15 +88,31 @@ def feature_transform(mov, fix, transform_type='affine', feature_type='centroid'
         fix_centroids = get_foreground_centroids(fix, device=device)
 
         if transform_type == "affine":
-            affine_matrix = torch.linalg.lstsq(mov_centroids, fix_centroids).solution
-        elif transform_type == "rigid" or transform_type == "rigid7":
+            affine_matrix, translation = lstsq_affine(mov_centroids, fix_centroids)
+        elif transform_type == "rigid":
+            affine_matrix, translation = lstsq_rigid(mov_centroids, fix_centroids)
+        elif transform_type == "rigid7":
             raise NotImplementedError("Rigid transform for feature type {} is not implemented yet.".format(feature_type))
     
     # compute the displacement field
     fix_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
-    ddf = fix_grid @ affine_matrix  - fix_grid
+    ddf = fix_grid @ (affine_matrix  - torch.eye(fix.dim()-1,device=device)) + translation
 
-    ddf=None
-    affine_matrix=None
     return ddf, affine_matrix
-    
+
+
+def lstsq_affine(mov_pts, fix_pts):
+    # such that |fix_pts - (mov_pts @ affine_matrix + translation)|^2 is minimised
+    translation = fix_pts.mean(dim=0) - mov_pts.mean(dim=0) 
+    affine_matrix = torch.linalg.lstsq(mov_pts, fix_pts-translation).solution  # order: mov -> fix
+    return affine_matrix, translation
+
+def lstsq_rigid(mov_pts, fix_pts):
+    # such that |fix_pts - (mov_pts @ rotation_matrix + translation)|^2 is minimised, where rotation_matrix is orthogonal
+    translation = fix_pts.mean(dim=0) - mov_pts.mean(dim=0) 
+    mov_centered = mov_pts - mov_pts.mean(dim=0)
+    fix_centered = fix_pts - fix_pts.mean(dim=0)
+    W = fix_centered.t() @ mov_centered
+    U, S, V = torch.svd(W)
+    rotation_matrix = V @ U.t()
+    return rotation_matrix, translation
