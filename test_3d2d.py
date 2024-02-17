@@ -15,7 +15,7 @@ masks_mov, masks_fix = load_test_data('3d')
 
 # estimate dense correspondence
 paired_rois = PairedRegions(masks_mov=masks_mov, masks_fix=masks_fix, device=device)
-ddf = paired_rois.get_dense_correspondence(transform_type='affine')
+ddf = paired_rois.get_dense_correspondence(transform_type='affine', feature_type='centroid')
 #ddf = paired_rois.get_dense_correspondence(transform_type='ddf', max_iter=int(1e4), lr=1e-3, w_ddf=1.0, verbose=True)
 
 # save warped ROIs for visulisation

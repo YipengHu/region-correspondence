@@ -28,7 +28,7 @@ class PairedRegions():
             raise ValueError("mov and fix must have the same dimensionality.")
 
 
-    def get_dense_correspondence(self, transform_type='ddf', **kwargs):
+    def get_dense_correspondence(self, transform_type='ddf', feature_type='voxel', **kwargs):
         '''
         transform_type: str, one of ['ddf', 'ffd', 'affine', 'spline']
             ddf implements the direct dense displacement field optimisation. 
@@ -40,10 +40,8 @@ class PairedRegions():
                 self.ddf, _ = ffd_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=None, device=self.device, **kwargs)  # grid_sample requires float32
             case 'ffd':
                 self.ddf, self.control_grid = ffd_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
-            case 'affine':
-                self.ddf, self.affine_matrix = feature_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type='affine', feature_type='centroid', device=self.device, **kwargs)
-            case 'rigid':
-                self.ddf, self.affine_matrix = feature_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type='rigid', feature_type='surface', device=self.device, **kwargs)
+            case 'affine' | 'rigid' | 'rigid7':
+                self.ddf, self.affine_matrix, self.translation = feature_transform(mov=self.masks_mov, fix=self.masks_fix, transform_type=transform_type, feature_type=feature_type, device=self.device, **kwargs)
             case 'spline':
                 raise NotImplementedError("TPS transform is not implemented yet.")
             case _:
