@@ -1,26 +1,23 @@
+# implements the optimisation methods for region correspondence estimation
 
 import torch
 
-from region_correspondence.utils import get_reference_grid, upsample_control_grid, sampler
+from region_correspondence.control import get_reference_grid, upsample_control_grid, sampler
 from region_correspondence.metrics import DDFLoss, ROILoss
+from region_correspondence.feature import get_foreground_centroids
 
 
-def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
+def ffd_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
     '''
-    Implements the free-form deformation (FFD) estimation based on control point grid (control_grid), using iterative optimisation
+    Implements the control-point-based free-form deformation (FFD) estimation based on control point grid (control_grid), using iterative optimisation
         when control_grid_size = None, the dense displacement field (DDF) estimation is estimated using the iterative optimisation
-    mov: torch.tensor of shape (C,D0,H0,W0) where C is the number of masks
-    fix: torch.tensor of shape (C,D1,H1,W1) where C is the number of masks
+    mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
+    fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
     control_grid_size: 
         None for DDF estimation
         when specified, tuple of 3 ints for 3d, tuple of 2 ints for 2d, or tuple of 1 int for the same size in all dimensions
     Returns a dense displacement field (DDF) of shape (D1,H1,W1,3) where the dim=3 contains the displacement vectors
     '''
-    num_masks = mov.shape[0]
-    if num_masks != fix.shape[0]:
-        raise ValueError("mov and fix must have the same number of masks.")
-    if mov.dim() != fix.dim():
-        raise ValueError("mov and fix must have the same dimensionality.")
     if isinstance(control_grid_size,int):
         if mov.dim() == 4:
             control_grid_size = (control_grid_size,control_grid_size,control_grid_size)
@@ -71,3 +68,51 @@ def iterative_ddf(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
         optimizer.step()
     
     return ddf, control_grid 
+
+
+def feature_transform(mov, fix, transform_type='affine', feature_type='centroid', device=None):
+    '''
+    Implements estimation of parametric transformation using extracted features 
+    mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
+    fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
+    transform_type: str, one of ["affine", "rigid", "rigid7"]
+
+    '''
+    if transform_type not in ["affine", "rigid", "rigid7"]:
+        raise ValueError("Unknown transform type: {}".format(transform_type))
+    if feature_type not in ["centroid", "surface"]:
+        raise ValueError("Unknown feature type: {}".format(feature_type))
+    
+    if feature_type == "centroid":
+        mov_centroids = get_foreground_centroids(mov, device=device)
+        fix_centroids = get_foreground_centroids(fix, device=device)
+
+        if transform_type == "affine":
+            affine_matrix, translation = lstsq_affine(mov_centroids, fix_centroids)
+        elif transform_type == "rigid":
+            affine_matrix, translation = lstsq_rigid(mov_centroids, fix_centroids)
+        elif transform_type == "rigid7":
+            raise NotImplementedError("Rigid transform for feature type {} is not implemented yet.".format(feature_type))
+    
+    # compute the displacement field
+    fix_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
+    ddf = fix_grid @ (affine_matrix  - torch.eye(fix.dim()-1,device=device)) + translation
+
+    return ddf, affine_matrix
+
+
+def lstsq_affine(mov_pts, fix_pts):
+    # such that |fix_pts - (mov_pts @ affine_matrix + translation)|^2 is minimised
+    translation = fix_pts.mean(dim=0) - mov_pts.mean(dim=0) 
+    affine_matrix = torch.linalg.lstsq(mov_pts, fix_pts-translation).solution  # order: mov -> fix
+    return affine_matrix, translation
+
+def lstsq_rigid(mov_pts, fix_pts):
+    # such that |fix_pts - (mov_pts @ rotation_matrix + translation)|^2 is minimised, where rotation_matrix is orthogonal
+    translation = fix_pts.mean(dim=0) - mov_pts.mean(dim=0) 
+    mov_centered = mov_pts - mov_pts.mean(dim=0)
+    fix_centered = fix_pts - fix_pts.mean(dim=0)
+    W = fix_centered.t() @ mov_centered
+    U, S, V = torch.svd(W)
+    rotation_matrix = V @ U.t()
+    return rotation_matrix, translation
