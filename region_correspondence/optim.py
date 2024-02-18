@@ -70,7 +70,7 @@ def ffd_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
     return ddf, control_grid 
 
 
-def feature_transform(mov, fix, transform_type='affine', feature_type='centroid', device=None):
+def feature_transform(mov, fix, transform_type='rigid', feature_type='centroid', device=None):
     '''
     Implements estimation of parametric transformation using extracted features 
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
@@ -86,15 +86,17 @@ def feature_transform(mov, fix, transform_type='affine', feature_type='centroid'
     if feature_type == "centroid":
         mov_centroids = get_foreground_centroids(mov, device=device)
         fix_centroids = get_foreground_centroids(fix, device=device)
-        if transform_type == "affine":
-            affine_matrix, translation = ls_affine(mov_centroids, fix_centroids)
-        elif transform_type == "rigid":
+        if transform_type == "rigid":
             affine_matrix, translation = ls_rigid(mov_centroids, fix_centroids)
-        elif transform_type == "rigid7":
-            raise NotImplementedError("Rigid transform for feature type {} is not implemented yet.".format(feature_type))
+        elif transform_type == "affine":
+            affine_matrix, translation = ls_affine(mov_centroids, fix_centroids)
+        else:
+            raise NotImplementedError("Transform_type {} with feature type {} with is not implemented yet.".format(transform_type,feature_type))
     elif feature_type == "surface":
         raise NotImplementedError("Surface feature type is not implemented yet.")
+    else:
+        raise NotImplementedError("Transform_type {} with feature type {} with is not implemented yet.".format(transform_type,feature_type))
     
-    ddf = ddf_by_affine(grid_size=fix.shape[1:], affine_matrix=affine_matrix, translation=translation, device=device)
+    ddf = ddf_by_affine(grid_size=fix.shape[1:], affine_matrix=affine_matrix, translation=translation, inverse=True, device=device)
 
     return ddf, affine_matrix, translation
