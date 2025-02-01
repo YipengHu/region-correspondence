@@ -1,8 +1,8 @@
-# Implements transformation on image point-based features
+# Implements transformation based on scattered control points and converting between ddf-based representation
 
 import torch
 
-from region_correspondence.control import get_reference_grid
+from region_correspondence.gridded import get_reference_grid
 
 
 def get_foreground_coordinates(masks, device=None):

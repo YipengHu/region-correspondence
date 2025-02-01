@@ -4,7 +4,7 @@ import torch
 
 from make_test_data import load_test_data, save_test_data
 from region_correspondence.paired_regions import PairedRegions
-from region_correspondence.control import warp_by_ddf
+from region_correspondence.gridded import warp_by_ddf
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

@@ -2,14 +2,14 @@
 
 import torch
 
-from region_correspondence.control import get_reference_grid, upsample_control_grid, sampler
 from region_correspondence.metrics import DDFLoss, ROILoss
-from region_correspondence.feature import get_foreground_centroids, ddf_by_affine, ls_affine, ls_rigid
+from region_correspondence.gridded import get_reference_grid, upsample_control_grid, sampler
+from region_correspondence.scattered import get_foreground_centroids, ddf_by_affine, ls_affine, ls_rigid
 
 
-def ffd_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
+def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
     '''
-    Implements the control-point-based free-form deformation (FFD) estimation based on control point grid (control_grid), using iterative optimisation
+    Optimise a transformation based on gridded control points (control_grid), using an iterative algorithm
         when control_grid_size = None, the dense displacement field (DDF) estimation is estimated using the iterative optimisation
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
     fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
@@ -70,9 +70,9 @@ def ffd_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e
     return ddf, control_grid 
 
 
-def feature_transform(mov, fix, transform_type='rigid', feature_type='centroid', device=None):
+def scattered_transform(mov, fix, transform_type='rigid', feature_type='centroid', device=None):
     '''
-    Implements estimation of parametric transformation using extracted features 
+    Optimise a parametric transformation, using scattered control points 
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
     fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
     transform_type: str, one of ["affine", "rigid", "rigid7"]

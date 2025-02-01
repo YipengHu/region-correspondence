@@ -1,4 +1,4 @@
-# Implements the control-point-based free-form deformation (FFD) transformation on images, with the dense displacement field (DDF) as a special case
+# Implements transformation based on gridded control points, a.k.a. free-form deformation (FFD), with the dense displacement field (DDF) being a special case
 
 import torch
 
