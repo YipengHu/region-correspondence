@@ -40,7 +40,7 @@ def get_foreground_centroids(masks, device=None):
     return torch.stack([c.mean(dim=0) for c in coords],dim=0)
 
 
-def ddf_by_affine(grid_size, affine_matrix, translation, inverse=True, device=None):
+def affine_to_ddf(grid_size, affine_matrix, translation, inverse=True, device=None):
     '''
     grid_size: tuple of 3 ints for 3d, tuple of 2 ints for 2d
     affine_matrix: torch.tensor of shape (3,3) for 3d, (2,2) for 2d

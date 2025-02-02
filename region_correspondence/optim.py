@@ -4,12 +4,12 @@ import torch
 
 from region_correspondence.metrics import DDFLoss, ROILoss
 from region_correspondence.gridded import get_reference_grid, upsample_control_grid, sampler
-from region_correspondence.scattered import get_foreground_centroids, ddf_by_affine, ls_affine, ls_rigid
+from region_correspondence.scattered import get_foreground_centroids, affine_to_ddf, ls_affine, ls_rigid
 
 
-def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e5), lr=1e-3, w_ddf=1.0, verbose=False):
+def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e4), lr=1e-3, w_ddf=1.0, verbose=True):
     '''
-    Optimise a transformation based on gridded control points (control_grid), using an iterative algorithm
+    Compute a transformation based on gridded control points (control_grid), using an iterative optimisation
         when control_grid_size = None, the dense displacement field (DDF) estimation is estimated using the iterative optimisation
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
     fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
@@ -25,12 +25,12 @@ def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=in
             control_grid_size = (control_grid_size,control_grid_size)
 
     if verbose:
-            if control_grid_size is None:
-                print("Optimising DDF (dense displacement field):")
-            elif len(control_grid_size) == 3:
-                print("Optimising FFD (free-form deformation) with control grid size ({},{},{}):".format(*control_grid_size))
-            elif len(control_grid_size) == 2:
-                print("Optimising FFD (free-form deformation) with control grid size ({},{}):".format(*control_grid_size))
+        if control_grid_size is None:
+            print("Optimising DDF (dense displacement field):")
+        elif len(control_grid_size) == 3:
+            print("Optimising gridded control points with a grid size of ({},{},{}):".format(*control_grid_size))
+        elif len(control_grid_size) == 2:
+            print("Optimising gridded control points with a grid size of ({},{}):".format(*control_grid_size))
     
     ref_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
     if control_grid_size is not None:
@@ -66,37 +66,39 @@ def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=in
         
         loss.backward()
         optimizer.step()
+
+        #TODO configurable convergence criterion based on metric_overlap
     
     return ddf, control_grid 
 
 
-def scattered_transform(mov, fix, transform_type='rigid', feature_type='centroid', device=None):
+def scattered_transform(mov, fix, parametric_type='rigid', control_point_type='centroid', device=None):
     '''
-    Optimise a parametric transformation, using scattered control points 
+    Compute a parametric transformation, using scattered control points 
     mov: torch.tensor of shape (C,D0,H0,W0) for 3d, where C is the number of masks, (C,H0,W0) for 2d
     fix: torch.tensor of shape (C,D1,H1,W1) for 3d, where C is the number of masks, (C,H1,W1) for 2d
-    transform_type: str, one of ["affine", "rigid", "rigid7"]
+    parametric_type: str, one of ["affine", "rigid", "rigid7"]
 
     '''
-    if transform_type not in ["affine", "rigid", "rigid7"]:
-        raise ValueError("Unknown transform type: {}".format(transform_type))
-    if feature_type not in ["centroid", "surface"]:
-        raise ValueError("Unknown feature type: {}".format(feature_type))
+    if parametric_type not in ["affine", "rigid", "rigid7"]:
+        raise ValueError("Unknown transform type: {}".format(parametric_type))
+    if control_point_type not in ["centroid", "voxel", "surface"]:
+        raise ValueError("Unknown feature type: {}".format(control_point_type))
     
-    if feature_type == "centroid":
+    if control_point_type == "centroid":
         mov_centroids = get_foreground_centroids(mov, device=device)
         fix_centroids = get_foreground_centroids(fix, device=device)
-        if transform_type == "rigid":
+        if parametric_type == "rigid":
             affine_matrix, translation = ls_rigid(mov_centroids, fix_centroids)
-        elif transform_type == "affine":
+        elif parametric_type == "affine":
             affine_matrix, translation = ls_affine(mov_centroids, fix_centroids)
         else:
-            raise NotImplementedError("Transform_type {} with feature type {} with is not implemented yet.".format(transform_type,feature_type))
-    elif feature_type == "surface":
+            raise NotImplementedError("parametric_type {} with feature type {} with is not implemented yet.".format(parametric_type,control_point_type))
+    elif control_point_type == "surface":
         raise NotImplementedError("Surface feature type is not implemented yet.")
     else:
-        raise NotImplementedError("Transform_type {} with feature type {} with is not implemented yet.".format(transform_type,feature_type))
+        raise NotImplementedError("parametric_type {} with feature type {} with is not implemented yet.".format(parametric_type,control_point_type))
     
-    ddf = ddf_by_affine(grid_size=fix.shape[1:], affine_matrix=affine_matrix, translation=translation, inverse=True, device=device)
+    ddf = affine_to_ddf(grid_size=fix.shape[1:], affine_matrix=affine_matrix, translation=translation, inverse=True, device=device)
 
     return ddf, affine_matrix, translation
