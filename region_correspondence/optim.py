@@ -89,9 +89,9 @@ def scattered_transform(mov, fix, parametric_type='rigid', control_point_type='c
         mov_centroids = get_foreground_centroids(mov, device=device)
         fix_centroids = get_foreground_centroids(fix, device=device)
         if parametric_type == "rigid":
-            affine_matrix, translation = ls_rigid(mov_centroids, fix_centroids)
+            affine_inv, translation_inv = ls_rigid(fix_centroids, mov_centroids)
         elif parametric_type == "affine":
-            affine_matrix, translation = ls_affine(mov_centroids, fix_centroids)
+            affine_inv, translation_inv = ls_affine(fix_centroids, mov_centroids)
         else:
             raise NotImplementedError("parametric_type {} with feature type {} with is not implemented yet.".format(parametric_type,control_point_type))
     elif control_point_type == "surface":
@@ -99,6 +99,6 @@ def scattered_transform(mov, fix, parametric_type='rigid', control_point_type='c
     else:
         raise NotImplementedError("parametric_type {} with feature type {} with is not implemented yet.".format(parametric_type,control_point_type))
     
-    ddf = affine_to_ddf(grid_size=fix.shape[1:], affine_matrix=affine_matrix, translation=translation, inverse=True, device=device)
+    ddf = affine_to_ddf(grid_size=fix.shape[1:], affine_matrix=affine_inv, translation=translation_inv, device=device)
 
-    return ddf, affine_matrix, translation
+    return ddf

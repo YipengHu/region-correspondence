@@ -46,18 +46,20 @@ def affine_to_ddf(grid_size, affine_matrix, translation, inverse=True, device=No
     affine_matrix: torch.tensor of shape (3,3) for 3d, (2,2) for 2d
     translation: torch.tensor of shape (3) for 3d, (2) for 2d
     Returns a dense displacement field (DDF) of shape (D,H,W,3) where the dim=3 is the displacement vector, such that
-        if inverse: mov_grid @ affine_matrix + translation = fix_grid 
-                    => (fix_grid - translation) @ affine_matrix^(-1) = mov_grid = fix_grid + ddf
-                    => ddf = [fix_grid @ affine_matrix^(-1) - fix_grid] - translation @ affine_matrix^(-1)
-         otherwise: fix_grid @ affine_matrix + translation = mov_grid = fix_grid + ddf 
-                    => ddf = [fix_grid @ affine_matrix - fix_grid] + translation
+        if inverse (is provided): 
+            fix_grid @ affine_matrix + translation = mov_grid = fix_grid + ddf 
+                => ddf = [fix_grid @ affine_matrix - fix_grid] + translation
+         otherwise: 
+            mov_grid @ affine_matrix + translation = fix_grid 
+                => (fix_grid - translation) @ affine_matrix^(-1) = mov_grid = fix_grid + ddf
+                => ddf = [fix_grid @ affine_matrix^(-1) - fix_grid] - translation @ affine_matrix^(-1)
     '''
     grid = get_reference_grid(grid_size, device)
     if inverse:
+        ddf = grid @ (affine_matrix  - torch.eye(grid.dim()-1,device=device)) + translation
+    else:
         affine_matrix_inv = torch.linalg.inv(affine_matrix)
         ddf = grid @ (affine_matrix_inv  - torch.eye(grid.dim()-1,device=device)) - translation @ affine_matrix_inv
-    else:
-        ddf = grid @ (affine_matrix  - torch.eye(grid.dim()-1,device=device)) + translation
     return ddf
 
 

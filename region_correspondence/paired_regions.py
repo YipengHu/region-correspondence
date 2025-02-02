@@ -39,9 +39,9 @@ class PairedRegions():
             case 'ddf':
                 self.ddf, _ = gridded_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=None, device=self.device, **kwargs)  # grid_sample requires float32
             case 'ffd':
-                self.ddf, self.control_grid = gridded_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
+                self.ddf, _ = gridded_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
             case 'affine': 
-                self.ddf, self.affine_matrix, self.translation = scattered_transform(mov=self.masks_mov, fix=self.masks_fix, parametric_type=transform_type, device=self.device, **kwargs)
+                self.ddf = scattered_transform(mov=self.masks_mov, fix=self.masks_fix, parametric_type=transform_type, device=self.device, **kwargs)
             case 'spline':
                 raise NotImplementedError("TPS transform is not implemented yet.")
             case _:
