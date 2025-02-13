@@ -40,6 +40,17 @@ def get_foreground_centroids(masks, device=None):
     return torch.stack([c.mean(dim=0) for c in coords],dim=0)
 
 
+def get_foreground_bounding_corners(masks, device=None):
+    '''
+    masks: torch.tensor of shape (C,D,H,W) where C is the number of masks
+    Returns a torch.tensor of shape (4*C,3) for 3d
+                                (4*C,2) for 2d
+    '''
+    coords = get_foreground_coordinates(masks, device)
+    get_corners = lambda c: [c[minmax][xyz], for minmax in [0,1] for xyz in range(3)]
+    return torch.stack([torch.stack([c.min(dim=0).values, c.max(dim=0).values],dim=0) for c in coords],dim=0)
+
+
 def affine_to_ddf(grid_size, affine_matrix, translation, inverse=True, device=None):
     '''
     grid_size: tuple of 3 ints for 3d, tuple of 2 ints for 2d
