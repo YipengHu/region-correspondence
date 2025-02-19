@@ -3,11 +3,20 @@
 import torch
 
 from region_correspondence.metrics import DDFLoss, ROILoss
-from region_correspondence.gridded import get_reference_grid, upsample_control_grid, sampler
+from region_correspondence.gridded import get_reference_grid, resample_grid, sampler
 from region_correspondence.scattered import get_foreground_centroids, get_foreground_bounding_corners, affine_to_ddf, ls_affine, ls_rigid
 
 
-def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=int(1e4), lr=1e-3, w_ddf=1.0, verbose=True):
+def gridded_transform(
+        mov, 
+        fix, 
+        control_grid_size=None, 
+        initial_ddf=None, 
+        device=None, 
+        max_iter=int(1e4), 
+        lr=1e-3, 
+        w_ddf=1.0, 
+        verbose=True):
     '''
     Compute a transformation based on gridded control points (control_grid), using an iterative optimisation
         when control_grid_size = None, the dense displacement field (DDF) estimation is estimated using the iterative optimisation
@@ -16,6 +25,7 @@ def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=in
     control_grid_size: 
         None for DDF estimation
         when specified, tuple of 3 ints for 3d, tuple of 2 ints for 2d, or tuple of 1 int for the same size in all dimensions
+    initial_ddf: torch.tensor of shape (D1,H1,W1,3) where dim=3 contains the displacement vectors, (H1,W1,2) for 2d, for initialisation of the iterative optimisation
     Returns a dense displacement field (DDF) of shape (D1,H1,W1,3) where the dim=3 contains the displacement vectors
     '''
     if isinstance(control_grid_size, int):
@@ -25,7 +35,24 @@ def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=in
         elif mov.dim() == 3:
             control_grid_size = (control_grid_size, control_grid_size)
 
+    ref_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
+    if control_grid_size is not None:  # ffd
+        control_grid = get_reference_grid(
+            grid_size=control_grid_size, device=device)
+        if initial_ddf is not None:
+            control_grid = control_grid + resample_grid(initial_ddf, control_grid)
+    else:  # ddf
+        control_grid = get_reference_grid(
+            grid_size=ref_grid.shape[:-1], device=device)
+        if initial_ddf is not None:
+            control_grid = control_grid + initial_ddf  #TODO check shape or resample to ref_grid
+    control_grid += torch.normal(mean=0, std=1e-5, size=control_grid.shape,
+                                 dtype=torch.float32, device=device)  # initialise to break symmetry
+    control_grid.requires_grad = True
+
     if verbose:
+        if initial_ddf is not None:
+            print("Initialised with provided initial_ddf.")
         if control_grid_size is None:
             print("Optimising DDF (dense displacement field):")
         elif len(control_grid_size) == 3:
@@ -34,17 +61,6 @@ def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=in
         elif len(control_grid_size) == 2:
             print("Optimising gridded control points with a grid size of ({},{}):".format(
                 *control_grid_size))
-
-    ref_grid = get_reference_grid(grid_size=fix.shape[1:], device=device)
-    if control_grid_size is not None:
-        control_grid = get_reference_grid(
-            grid_size=control_grid_size, device=device)
-    else:  # ddf
-        control_grid = get_reference_grid(
-            grid_size=ref_grid.shape[:-1], device=device)
-    control_grid += torch.normal(mean=0, std=1e-5, size=control_grid.shape,
-                                 dtype=torch.float32, device=device)  # initialise to break symmetry
-    control_grid.requires_grad = True
 
     optimizer = torch.optim.Adam(params=[control_grid], lr=lr)
     loss_roi = ROILoss(w_overlap=1.0, w_class=0.1)
@@ -56,7 +72,7 @@ def gridded_transform(mov, fix, control_grid_size=None, device=None, max_iter=in
         optimizer.zero_grad()
 
         if control_grid_size is not None:
-            sample_grid = upsample_control_grid(control_grid, ref_grid)
+            sample_grid = resample_grid(control_grid, ref_grid)
         else:  # ddf
             sample_grid = control_grid
         warped = sampler(mov, sample_grid)

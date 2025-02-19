@@ -28,20 +28,50 @@ class PairedRegions():
             raise ValueError("mov and fix must have the same dimensionality.")
 
 
-    def get_dense_correspondence(self, transform_type='ffd', **kwargs):
+    def get_dense_correspondence(self, transform_type='ffd', pre_alignment='affine', **kwargs):
         '''
         transform_type: str, one of ['ddf', 'ffd', 'affine']
             ddf implements the direct dense displacement field optimisation. 
             ffd implements the free-form deformation based on a control point grid.
+        pre_alignment: str, one of ['affine', 'rigid'], only used for 'ddf' and 'ffd'
+            initialise the iterative scattered point transformation
+            by default pre-alignment aligns a the scattered bounding corners first using an affine transformation
         Returns a dense displacement field (DDF) of shape (H1,W1,D1,3) where the dim=0 is the displacement vector
         '''
+        if (pre_alignment is not None) and (transform_type.lower() in {'ddf', 'ffd'}):
+            self.initial_ddf = scattered_transform(
+                mov=self.masks_mov, 
+                fix=self.masks_fix, 
+                parametric_type=pre_alignment, 
+                control_point_type='bounding',  # default using bounding box corners as control points, robust to multi-object ROIs
+                device=self.device)
+        else:
+            self.initial_ddf = None
+
         match transform_type.lower():
             case 'ddf':
-                self.ddf, _ = gridded_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=None, device=self.device, **kwargs)  # grid_sample requires float32
+                self.ddf, _ = gridded_transform(
+                    mov=self.masks_mov.type(torch.float32), 
+                    fix=self.masks_fix.type(torch.float32), 
+                    control_grid_size=None, 
+                    initial_ddf=self.initial_ddf, 
+                    device=self.device, 
+                    **kwargs)  # grid_sample requires float32
             case 'ffd':
-                self.ddf, _ = gridded_transform(mov=self.masks_mov.type(torch.float32), fix=self.masks_fix.type(torch.float32), control_grid_size=10, device=self.device, **kwargs) 
+                self.ddf, _ = gridded_transform(
+                    mov=self.masks_mov.type(torch.float32), 
+                    fix=self.masks_fix.type(torch.float32), 
+                    control_grid_size=10, 
+                    initial_ddf=self.initial_ddf, 
+                    device=self.device, 
+                    **kwargs) 
             case 'affine': 
-                self.ddf = scattered_transform(mov=self.masks_mov, fix=self.masks_fix, parametric_type=transform_type, device=self.device, **kwargs)
+                self.ddf = scattered_transform(
+                    mov=self.masks_mov, 
+                    fix=self.masks_fix, 
+                    parametric_type=transform_type, 
+                    device=self.device, 
+                    **kwargs)
             case 'spline':
                 raise NotImplementedError("TPS transform is not implemented yet.")
             case _:

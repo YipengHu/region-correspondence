@@ -28,9 +28,9 @@ def get_reference_grid(grid_size, device=None):
     return ref_grid
 
 
-def sampler(img, sample_grid):
+def sampler(data, sample_grid):
     '''
-    img: torch.tensor of shape (C,D0,H0,W0) where C is the number of masks
+    data: torch.tensor of shape (C,D0,H0,W0) where C is the number of data (masks/images/coordinates)
                                (C,H0,W0) for 2d 
     sample_grid: torch.tensor of shape (D1,H1,W1,3) where dim=3 is the coordinate vector xyz (<- ijk)
                                        (H1,W1,2) for 2d 
@@ -38,7 +38,7 @@ def sampler(img, sample_grid):
                                     (C,H1,W1) for 2d 
     '''
     warped = torch.nn.functional.grid_sample(
-        input=img.unsqueeze(0),
+        input=data.unsqueeze(0),
         grid=sample_grid.unsqueeze(0),
         mode="bilinear",
         padding_mode="zeros",
@@ -65,18 +65,18 @@ def warp_by_ddf(vol, ddf, ref_grid=None):
     return warped
 
 
-def upsample_control_grid(control_grid, ref_grid):
+def resample_grid(support_grid, query_grid):
     '''
-    implements the up-sampling of the control grid to the sampling grid with linear interpolation
-    control_grid: torch.tensor of shape (D,H,W,3) where dim=3 is the coordinate vector xyz (<- ijk)
+    implements the resampling of support grid to the query grid with linear interpolation
+    support_grid: torch.tensor of shape (D,H,W,3) where dim=3 is the coordinate vector xyz (<- ijk)
                                         (H,W,2) for 2d where dim=2 is the coordinate vector xy (<- ij)
-    ref_grid: torch.tensor of shape (D1,H1,W1,3) where dim=3 is the coordinate vector xyz (<- ijk)
+    query_grid: torch.tensor of shape (D1,H1,W1,3) where dim=3 is the coordinate vector xyz (<- ijk)
                                     (H1,W1,2) for 2d where dim=2 is the coordinate vector xy (<- ij)
     Returns a sample_grid of shape (D1,H1,W1,3) where dim=3 is the coordinate vector xyz (<- ijk)
                                    (H1,W1,2) for 2d where dim=2 is the coordinate vector xy (<- ij)
     '''
-    if control_grid.shape[-1] == 3:
-        sample_grid = sampler(control_grid.permute(3,0,1,2),ref_grid).permute(1,2,3,0)
-    elif control_grid.shape[-1] == 2:
-        sample_grid = sampler(control_grid.permute(2,0,1),ref_grid).permute(1,2,0)
+    if support_grid.shape[-1] == 3:
+        sample_grid = sampler(support_grid.permute(3,0,1,2), query_grid).permute(1,2,3,0)
+    elif support_grid.shape[-1] == 2:
+        sample_grid = sampler(support_grid.permute(2,0,1), query_grid).permute(1,2,0)
     return sample_grid
