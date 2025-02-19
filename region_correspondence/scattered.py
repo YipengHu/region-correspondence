@@ -33,8 +33,7 @@ def mask_indexing(grid, masks):
 def get_foreground_centroids(masks, device=None):
     '''
     masks: torch.tensor of shape (C,D,H,W) where C is the number of masks
-    Returns a torch.tensor of shape (C,3) for 3d
-                                (C,2) for 2d
+    Returns a torch.tensor of shape (C,3) for 3d, (C,2) for 2d
     '''
     coords = get_foreground_coordinates(masks, device)
     return torch.stack([c.mean(dim=0) for c in coords],dim=0)
@@ -43,12 +42,12 @@ def get_foreground_centroids(masks, device=None):
 def get_foreground_bounding_corners(masks, device=None):
     '''
     masks: torch.tensor of shape (C,D,H,W) where C is the number of masks
-    Returns a torch.tensor of shape (4*C,3) for 3d
-                                (4*C,2) for 2d
-    '''
+    Returns a list of length C, containing torch.tensor of shape (8,3) for 3d, (2,2) for 2d
+    '''       
     coords = get_foreground_coordinates(masks, device)
-    get_corners = lambda c: [c[minmax][xyz], for minmax in [0,1] for xyz in range(3)]
-    return torch.stack([torch.stack([c.min(dim=0).values, c.max(dim=0).values],dim=0) for c in coords],dim=0)
+    bounds = [torch.stack([c.min(dim=0).values, c.max(dim=0).values],dim=0) for c in coords]
+    corners = [torch.cartesian_prod(*b.unbind(dim=1)) for b in bounds]
+    return corners
 
 
 def affine_to_ddf(grid_size, affine_matrix, translation, inverse=True, device=None):
