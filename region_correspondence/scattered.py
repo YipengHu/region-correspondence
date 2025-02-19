@@ -47,7 +47,7 @@ def get_foreground_bounding_corners(masks, device=None):
     coords = get_foreground_coordinates(masks, device)
     bounds = [torch.stack([c.min(dim=0).values, c.max(dim=0).values],dim=0) for c in coords]
     corners = [torch.cartesian_prod(*b.unbind(dim=1)) for b in bounds]
-    return corners
+    return torch.cat(corners,dim=0)
 
 
 def affine_to_ddf(grid_size, affine_matrix, translation, inverse=True, device=None):
