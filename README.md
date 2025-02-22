@@ -6,8 +6,7 @@ Region correspondence is a higher-level correspondence represented by multiple, 
 
 
 ```python
-conda create -n roi2ddf  && 
+conda create -n roi2ddf pytorch==2.5.1 torchvision==0.20.1 pytorch-cuda=12.4 -c pytorch -c nvidia  && #TODO: update to pip 
 conda activate roi2ddf  && 
-conda install pytorch==2.5.1 torchvision==0.20.1 pytorch-cuda=12.4 -c pytorch -c nvidia  && #TODO: update to pip 
 pip install nibabel pillow  # only for file io
 ```
